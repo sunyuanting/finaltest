@@ -50,6 +50,30 @@ function draw() {
   text("淡江教育學院是哪一年成立的?", -width / 2, 10); // 顯示文字
   pop();
 
+  // 在影像左側畫圓圈並顯示 "1990年"
+  push();
+  fill(255, 255, 255); // 圓圈填充顏色為白色
+  stroke(0); // 圓圈邊框顏色為黑色
+  strokeWeight(2); // 邊框粗細
+  ellipse(100, height / 2, 100, 100); // 畫圓圈
+  fill(0); // 設定文字顏色為黑色
+  textSize(16); // 設定文字大小
+  textAlign(CENTER, CENTER); // 文字置中對齊
+  text("1990年", 100, height / 2); // 顯示文字
+  pop();
+
+  // 在影像右側畫圓圈並顯示 "2000年"
+  push();
+  fill(255, 255, 255); // 圓圈填充顏色為白色
+  stroke(0); // 圓圈邊框顏色為黑色
+  strokeWeight(2); // 邊框粗細
+  ellipse(width - 100, height / 2, 100, 100); // 畫圓圈
+  fill(0); // 設定文字顏色為黑色
+  textSize(16); // 設定文字大小
+  textAlign(CENTER, CENTER); // 文字置中對齊
+  text("2000年", width - 100, height / 2); // 顯示文字
+  pop();
+
   // 繪製臉部偵測
   if (predictions.length > 0) {
     const keypoints = predictions[0].scaledMesh;
