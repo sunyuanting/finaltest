@@ -3,7 +3,16 @@ let facemesh;
 let handpose;
 let predictions = [];
 let handPredictions = [];
+let grabbedCircle = null; // 用於追蹤抓取的圓圈
+let holding = false;
+let handX = 0;
+let handY = 0;
+let message = ""; // 用於顯示答對或錯誤的訊息
+let circle1990 = { x: 100, y: 240 };
+let circle2000 = { x: 540, y: 240 };
 
+const GRAB_DISTANCE = 40;
+const RELEASE_DISTANCE = 60;
 const indices = [409, 270, 269, 267, 0, 37, 39, 40, 185, 61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291];
 const indices2 = [76, 77, 90, 180, 85, 16, 315, 404, 320, 307, 306, 408, 304, 303, 302, 11, 72, 73, 74, 184];
 const leftEyeIndices = [243, 190, 56, 28, 27, 29, 30, 247, 130, 25, 110, 24, 23, 22, 26, 112];
@@ -35,81 +44,97 @@ function modelReady() {
 }
 
 function draw() {
-  // 翻轉畫布
-  translate(width, 0); // 將原點移到右側
-  scale(-1, 1); // 左右翻轉
-
+  translate(width, 0);
+  scale(-1, 1);
   image(video, 0, 0, width, height);
 
-  // 在影像上方顯示文字
   push();
-  scale(-1, 1); // 翻轉文字回正
-  fill(0); // 設定文字顏色為黑色
-  textSize(24); // 設定文字大小
-  textAlign(CENTER, TOP); // 文字置中對齊
-  text("淡江教育學院是哪一年成立的?", -width / 2, 10); // 顯示文字
+  scale(-1, 1);
+  fill(0);
+  textSize(24);
+  textAlign(CENTER, TOP);
+  text("淡江教育學院是哪一年成立的?", -width / 2, 10);
   pop();
 
-  // 在影像左側畫圓圈並顯示 "1990年"
-  push();
-  fill(255, 255, 255); // 圓圈填充顏色為白色
-  stroke(0); // 圓圈邊框顏色為黑色
-  strokeWeight(2); // 邊框粗細
-  ellipse(100, height / 2, 100, 100); // 畫圓圈
-  fill(0); // 設定文字顏色為黑色
-  textSize(16); // 設定文字大小
-  textAlign(CENTER, CENTER); // 文字置中對齊
-  text("1990年", 100, height / 2); // 顯示文字
-  pop();
+  drawCircle(circle1990, "1990年");
+  drawCircle(circle2000, "2000年");
 
-  // 在影像右側畫圓圈並顯示 "2000年"
-  push();
-  fill(255, 255, 255); // 圓圈填充顏色為白色
-  stroke(0); // 圓圈邊框顏色為黑色
-  strokeWeight(2); // 邊框粗細
-  ellipse(width - 100, height / 2, 100, 100); // 畫圓圈
-  fill(0); // 設定文字顏色為黑色
-  textSize(16); // 設定文字大小
-  textAlign(CENTER, CENTER); // 文字置中對齊
-  text("2000年", width - 100, height / 2); // 顯示文字
-  pop();
-
-  // 繪製臉部偵測
   if (predictions.length > 0) {
-    const keypoints = predictions[0].scaledMesh;
-
-    // 繪製臉部的各種形狀（保持原有邏輯）
-    drawFace(keypoints);
+    drawFace(predictions[0].scaledMesh);
   }
 
-  // 繪製手部偵測
   if (handPredictions.length > 0) {
-    for (let i = 0; i < handPredictions.length; i++) {
-      const hand = handPredictions[i];
-      const keypoints = hand.landmarks;
+    const keypoints = handPredictions[0].landmarks;
+    const [ix, iy] = keypoints[8];
+    const [tx, ty] = keypoints[4];
+    handX = ix;
+    handY = iy;
 
-      // 繪製手部關鍵點
-      for (let j = 0; j < keypoints.length; j++) {
-        const [x, y] = keypoints[j];
-        fill(0, 255, 0);
-        noStroke();
-        ellipse(x, y, 10, 10); // 用綠色圓點表示手部關鍵點
-      }
+    let pinchDist = dist(ix, iy, tx, ty);
 
-      // 繪製手指骨架
-      stroke(255, 0, 0);
-      strokeWeight(2);
-      const annotations = hand.annotations;
-      for (const part in annotations) {
-        const points = annotations[part];
-        for (let k = 0; k < points.length - 1; k++) {
-          const [x1, y1] = points[k];
-          const [x2, y2] = points[k + 1];
-          line(x1, y1, x2, y2); // 用紅色線條連接手指骨架
-        }
+    if (!holding && pinchDist < GRAB_DISTANCE) {
+      if (dist(ix, iy, circle1990.x, circle1990.y) < 50) {
+        grabbedCircle = "1990";
+        holding = true;
+      } else if (dist(ix, iy, circle2000.x, circle2000.y) < 50) {
+        grabbedCircle = "2000";
+        holding = true;
       }
     }
+
+    if (holding && pinchDist > RELEASE_DISTANCE) {
+      holding = false;
+      grabbedCircle = null;
+    }
+
+    for (let i = 0; i < keypoints.length; i++) {
+      const [x, y] = keypoints[i];
+      fill(0, 255, 0);
+      noStroke();
+      ellipse(x, y, 10, 10);
+    }
   }
+
+  if (holding) {
+    if (grabbedCircle === "1990") {
+      circle1990.x = handX;
+      circle1990.y = handY;
+    } else if (grabbedCircle === "2000") {
+      circle2000.x = handX;
+      circle2000.y = handY;
+    }
+  }
+
+  // 根據當前抓取狀態更新訊息
+if (holding && grabbedCircle === "2000") {
+  message = "答對";
+} else if (holding && grabbedCircle === "1990") {
+  message = "錯誤";
+} else {
+  message = "請抓取圓圈";
+}
+
+  push();
+  scale(-1, 1);
+  fill(0);
+  textSize(24);
+  textAlign(CENTER, TOP);
+  text(message, -width / 2, height - 50);
+  pop();
+}
+
+function drawCircle(circle, label) {
+  push();
+  fill(255);
+  stroke(0);
+  strokeWeight(2);
+  ellipse(circle.x, circle.y, 100, 100);
+  scale(-1, 1);
+  fill(0);
+  textSize(16);
+  textAlign(CENTER, CENTER);
+  text(label, -circle.x, circle.y);
+  pop();
 }
 
 function drawFace(keypoints) {
