@@ -35,6 +35,10 @@ function modelReady() {
 }
 
 function draw() {
+  // 翻轉畫布
+  translate(width, 0); // 將原點移到右側
+  scale(-1, 1); // 左右翻轉
+
   image(video, 0, 0, width, height);
 
   // 繪製臉部偵測
