@@ -41,6 +41,15 @@ function draw() {
 
   image(video, 0, 0, width, height);
 
+  // 在影像上方顯示文字
+  push();
+  scale(-1, 1); // 翻轉文字回正
+  fill(0); // 設定文字顏色為黑色
+  textSize(24); // 設定文字大小
+  textAlign(CENTER, TOP); // 文字置中對齊
+  text("淡江教育學院是哪一年成立的?", -width / 2, 10); // 顯示文字
+  pop();
+
   // 繪製臉部偵測
   if (predictions.length > 0) {
     const keypoints = predictions[0].scaledMesh;
