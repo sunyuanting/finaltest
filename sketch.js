@@ -19,6 +19,12 @@ const leftEyeIndices = [243, 190, 56, 28, 27, 29, 30, 247, 130, 25, 110, 24, 23,
 const rightEyeIndices = [263, 466, 388, 387, 386, 385, 384, 398, 362, 382, 381, 380, 374, 373, 390, 249];
 const foreheadIndices = [151, 109, 69, 66, 55, 8, 285, 296, 299, 338];
 
+// 🌧 水珠效果
+let raindrops = [];
+let mouthOpen = false;
+const MOUTH_TOP = 13;  // 上唇中間
+const MOUTH_BOTTOM = 14;  // 下唇中間
+
 function setup() {
   createCanvas(640, 480).position(
     (windowWidth - 640) / 2,
@@ -60,7 +66,39 @@ function draw() {
   drawCircle(circle2000, "2000年");
 
   if (predictions.length > 0) {
-    drawFace(predictions[0].scaledMesh);
+    const keypoints = predictions[0].scaledMesh;
+    drawFace(keypoints);
+
+    // 嘴巴開口偵測
+    const [xTop, yTop] = keypoints[MOUTH_TOP];
+    const [xBot, yBot] = keypoints[MOUTH_BOTTOM];
+    const mouthDist = dist(xTop, yTop, xBot, yBot);
+    mouthOpen = mouthDist > 5;  // 可以微調這個閾值
+
+    // 🌧 嘴巴張開才開始產生水滴
+    if (mouthOpen) {
+      if (frameCount % 5 === 0) {
+        raindrops.push({
+          x: random(width),
+          y: 0,
+          speed: random(3, 7)
+        });
+      }
+    } else {
+      raindrops = []; // 嘴巴閉上清除水珠
+    }
+  }
+
+  // 🌧 畫水珠
+  for (let i = raindrops.length - 1; i >= 0; i--) {
+    let drop = raindrops[i];
+    fill(0, 100, 255, 180);
+    noStroke();
+    ellipse(drop.x, drop.y, 10, 10);
+    drop.y += drop.speed;
+    if (drop.y > height) {
+      raindrops.splice(i, 1);
+    }
   }
 
   if (handPredictions.length > 0) {
